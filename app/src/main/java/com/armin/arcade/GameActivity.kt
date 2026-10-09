@@ -25,10 +25,12 @@ class GameActivity : AppCompatActivity() {
             domStorageEnabled = true        // رکوردها در localStorage ذخیره میشه
             cacheMode = WebSettings.LOAD_NO_CACHE
             allowFileAccess = true
+            allowFileAccessFromFileURLs = true
             builtInZoomControls = false
             textZoom = 100
             useWideViewPort = true
             loadWithOverviewMode = true
+            blockNetworkLoads = true        // بدون اینترنت = لود فوری
         }
         web.webViewClient = WebViewClient()
         web.webChromeClient = object : WebChromeClient() {
@@ -50,8 +52,13 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
-        val file = intent.getStringExtra("file") ?: "snake.html"
-        web.loadUrl("file:///android_asset/games/$file")
+        val customPath = intent.getStringExtra("path")
+        if (customPath != null) {
+            web.loadUrl("file://$customPath")
+        } else {
+            val file = intent.getStringExtra("file") ?: "snake.html"
+            web.loadUrl("file:///android_asset/games/$file")
+        }
     }
 
     override fun onBackPressed() {
