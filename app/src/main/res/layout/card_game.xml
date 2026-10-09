@@ -4,17 +4,21 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:background="@drawable/bg_library_card"
+    android:background="@drawable/card_white"
     android:padding="16dp"
+    android:layout_marginBottom="12dp"
+    android:elevation="3dp"
     android:clickable="true"
     android:focusable="true"
     android:foreground="?android:attr/selectableItemBackground">
 
     <TextView
         android:id="@+id/tv_emoji"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="34sp"
+        android:layout_width="54dp"
+        android:layout_height="54dp"
+        android:gravity="center"
+        android:background="@drawable/bg_emoji"
+        android:textSize="26sp"
         android:layout_marginStart="14dp" />
 
     <LinearLayout
@@ -27,22 +31,27 @@
             android:id="@+id/tv_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="19sp"
+            android:textColor="#1A2233"
+            android:textSize="17sp"
             android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_desc"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#8892A6"
+            android:textColor="#8A93A6"
             android:textSize="13sp"
-            android:paddingTop="2dp" />
+            android:paddingTop="3dp" />
     </LinearLayout>
 
     <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="◀"
-        android:textColor="#556070"
-        android:textSize="18sp" />
+        android:id="@+id/tv_go"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:gravity="center"
+        android:background="@drawable/bg_go"
+        android:text="‹"
+        android:textColor="#6D5DF6"
+        android:textSize="22sp"
+        android:textStyle="bold" />
 </LinearLayout>

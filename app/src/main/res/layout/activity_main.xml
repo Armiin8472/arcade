@@ -2,49 +2,72 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_main"
-    android:layoutDirection="rtl">
+    android:background="@drawable/bg_light"
+    android:layoutDirection="rtl"
+    android:fillViewport="true">
 
     <LinearLayout
-        android:id="@+id/ll_root"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/header_badge"
+            android:padding="18dp"
+            android:layout_marginTop="8dp"
+            android:elevation="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🎮"
+                android:textSize="34sp"
+                android:layout_marginStart="14dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="بازی‌خونه"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="۴ بازی آفلاین، بدون اینترنت"
+                    android:textColor="#E2E6FF"
+                    android:textSize="13sp"
+                    android:paddingTop="2dp" />
+            </LinearLayout>
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="🎮 بازی‌خونه"
-            android:textColor="#FFD700"
-            android:textSize="26sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:paddingTop="18dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="بازی مورد علاقه‌ات رو انتخاب کن"
-            android:textColor="#8892A6"
+            android:text="بازی‌ها"
+            android:textColor="#8A93A6"
             android:textSize="14sp"
-            android:gravity="center"
-            android:paddingBottom="16dp" />
+            android:textStyle="bold"
+            android:layout_marginTop="22dp"
+            android:layout_marginStart="4dp"
+            android:layout_marginBottom="4dp" />
 
         <LinearLayout
             android:id="@+id/ll_games"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="ساخته شده با ❤️"
-            android:textColor="#556070"
-            android:textSize="12sp"
-            android:gravity="center"
-            android:paddingTop="10dp"
-            android:paddingBottom="14dp" />
     </LinearLayout>
 </ScrollView>

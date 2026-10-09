@@ -30,7 +30,6 @@ class MainActivity : AppCompatActivity() {
             card.findViewById<TextView>(R.id.tv_emoji).text = g.emoji
             card.findViewById<TextView>(R.id.tv_title).text = g.title
             card.findViewById<TextView>(R.id.tv_desc).text = g.desc
-            card.findViewById<TextView>(R.id.tv_title).setTextColor(android.graphics.Color.parseColor(g.color))
             card.setOnClickListener {
                 startActivity(Intent(this, GameActivity::class.java).apply {
                     putExtra("file", g.file)
