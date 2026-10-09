@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سیستم رمزنگاری و رمزگشایی آفلاین (پشتیبانی فارسی)</title>
+    <style>
+        body {
+            font-family: Tahoma, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        textarea, input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            resize: vertical;
+        }
+        textarea#output {
+            background-color: #eee;
+        }
+        button {
+            background-color: #28a745; /* رنگ دکمه سبز شد */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+        }
+        button:hover {
+            background-color: #1e7e34;
+        }
+        h2 {
+            text-align: center;
+            color: #28a745;
+        }
+        .warning {
+            color: #d9534f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>سیستم رمزنگاری XOR (پشتیبانی کامل فارسی)</h2>
+        <p class="warning">⚠️ **هشدار:** فقط برای اهداف آموزشی. از این کد برای داده‌های حساس استفاده نکنید.</p>
+        
+        <label for="plaintext">متن ساده (شامل حروف فارسی):</label>
+        <textarea id="plaintext" rows="4" placeholder="متن فارسی یا انگلیسی خود را وارد کنید."></textarea>
+        
+        <label for="key">کلید (Key - ۸ کاراکتری برای مفهوم ۶۴ بیت):</label>
+        <input type="text" id="key" value="کلید۶۴بیتی" maxlength="16">
+        
+        <button onclick="encrypt()">رمزنگاری (Encrypt)</button>
+        <button onclick="decrypt()">رمزگشایی (Decrypt)</button>
+        
+        <label for="output">خروجی (متن رمز شده Base64):</label>
+        <textarea id="output" rows="4" readonly placeholder="متن رمز شده Base64 در اینجا نمایش داده می‌شود."></textarea>
+    </div>
+
+    <script>
+        // توابع کمکی برای رمزگذاری/رمزگشایی امن یونیکد به/از Base64
+        function utf8Encode(str) {
+            // تبدیل رشته یونیکد به رشته‌ای با بایت‌های قابل قبول btoa
+            return btoa(unescape(encodeURIComponent(str)));
+        }
+
+        function utf8Decode(str) {
+            // تبدیل رشته Base64 به رشته یونیکد اصلی
+            try {
+                return decodeURIComponent(escape(atob(str)));
+            } catch (e) {
+                return "خطای رمزگشایی Base64 یا کلید اشتباه است.";
+            }
+        }
+
+        /**
+         * تابع اصلی رمزنگاری/رمزگشایی XOR.
+         * عملیات XOR بر روی بایت‌های (کاراکترهای) رشته انجام می‌شود.
+         */
+        function xorCipher(text, key) {
+            let result = "";
+            for (let i = 0; i < text.length; i++) {
+                // محاسبه XOR کد کاراکتر متن با کد کاراکتر کلید (استفاده چرخشی)
+                let charCode = text.charCodeAt(i) ^ key.charCodeAt(i % key.length);
+                result += String.fromCharCode(charCode);
+            }
+            return result;
+        }
+
+        /**
+         * تابع رمزنگاری:
+         * 1. اعمال XOR بر روی متن ساده.
+         * 2. تبدیل خروجی به Base64 با پشتیبانی از یونیکد (utf8Encode).
+         */
+        function encrypt() {
+            const plaintext = document.getElementById('plaintext').value;
+            const key = document.getElementById('key').value;
+            
+            if (!plaintext || !key) {
+                alert("لطفاً متن و کلید را وارد کنید.");
+                return;
+            }
+
+            // گام 1: اعمال رمز XOR
+            const xored = xorCipher(plaintext, key);
+            
+            // گام 2: رمزگذاری Base64 با پشتیبانی یونیکد
+            const encryptedBase64 = utf8Encode(xored);
+            document.getElementById('output').value = encryptedBase64;
+        }
+
+        /**
+         * تابع رمزگشایی:
+         * 1. رمزگشایی Base64 با پشتیبانی یونیکد (utf8Decode).
+         * 2. اعمال XOR بر روی رشته برای برگرداندن به متن اصلی.
+         */
+        function decrypt() {
+            const encryptedBase64 = document.getElementById('output').value;
+            const key = document.getElementById('key').value;
+
+            if (!encryptedBase64 || !key) {
+                alert("لطفاً متن رمز شده و کلید را وارد کنید.");
+                return;
+            }
+
+            // گام 1: رمزگشایی Base64 به رشته‌ی بایت‌های اصلی
+            const xored = utf8Decode(encryptedBase64);
+            
+            // اگر خطایی در رمزگشایی Base64 رخ داد، پیام خطا را نمایش بده
+            if (xored.startsWith("خطای رمزگشایی")) {
+                alert(xored);
+                return;
+            }
+
+            // گام 2: اعمال رمز XOR
+            const decrypted = xorCipher(xored, key);
+            
+            document.getElementById('plaintext').value = decrypted;
+        }
+    </script>
+</body>
+</html>

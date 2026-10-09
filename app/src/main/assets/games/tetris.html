@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>تتریس نهایی</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-start: #1d212c; --bg-end: #2c2a3e; --grid-bg: rgba(10, 10, 20, 0.5);
+            --text-color: #f0f0f0; --accent-color: #9f45ff; --accent-glow: #e3c6ff;
+            --button-bg: rgba(255, 255, 255, 0.1); --button-active-bg: rgba(255, 255, 255, 0.2);
+            --border-color: rgba(255, 255, 255, 0.2);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            height: 100%; width: 100%; overflow: hidden;
+            background: linear-gradient(45deg, var(--bg-start), var(--bg-end));
+            color: var(--text-color); font-family: 'Vazirmatn', sans-serif;
+        }
+        #app-container { display: flex; flex-direction: column; height: 100%; padding: 10px; }
+        .game-header { text-align: center; flex-shrink: 0; padding: 0 10px; }
+        .top-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        .info-panel { display: flex; justify-content: space-around; font-size: 1.1rem; font-weight: 700; flex-grow: 1; }
+        .score-box span { color: var(--accent-glow); }
+        .next-piece-box { text-align: center; }
+        .next-piece-box p { font-size: 0.9rem; margin-bottom: 5px; }
+        #next-piece-canvas { background: var(--grid-bg); border-radius: 5px; border: 1px solid var(--border-color); }
+        #canvas-wrapper {
+            flex-grow: 1; display: flex; justify-content: center; align-items: center;
+            min-height: 0; width: 100%; position: relative;
+        }
+        #game-board {
+            border: 2px solid var(--border-color); border-radius: 10px;
+            background-color: var(--grid-bg); backdrop-filter: blur(5px);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+            max-width: 100%; max-height: 100%;
+        }
+        #pause-overlay {
+            position: absolute;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            border-radius: 10px;
+        }
+        #pause-overlay.show {
+            display: flex;
+        }
+        .controls {
+            flex-shrink: 0; display: grid;
+            grid-template-areas: "pause rotate ." "left down right";
+            grid-template-columns: 1fr 1fr 1fr; gap: 15px;
+            width: 100%; max-width: 340px; margin: 10px auto 0;
+        }
+        .controls button {
+            background-color: var(--button-bg); backdrop-filter: blur(5px);
+            color: var(--text-color); border: 1px solid var(--border-color);
+            border-radius: 50%; font-size: 2rem; cursor: pointer; user-select: none;
+            -webkit-tap-highlight-color: transparent; transition: all 0.15s ease;
+            width: 75px; height: 75px; margin: 0 auto;
+            display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .controls button:active { background-color: var(--button-active-bg); transform: scale(0.95); }
+        #pause-btn { grid-area: pause; font-size: 1.5rem; }
+        #rotate-btn { grid-area: rotate; } #move-left-btn { grid-area: left; }
+        #move-right-btn { grid-area: right; } #down-btn { grid-area: down; }
+        .modal {
+            display: flex; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .modal.show { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: rgba(30, 30, 50, 0.75); backdrop-filter: blur(10px);
+            padding: 30px; border: 1px solid var(--border-color); border-radius: 20px;
+            text-align: center; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            width: 80%; max-width: 300px; transform: scale(0.9); transition: transform 0.3s ease;
+        }
+        .modal.show .modal-content { transform: scale(1); }
+        .modal-content h2 { margin-bottom: 1rem; color: var(--accent-glow); }
+        .modal-content p { margin-bottom: 1.5rem; font-size: 1.1rem; }
+        .modal-btn {
+            padding: 12px 25px; font-size: 1.2rem; font-weight: 700;
+            font-family: 'Vazirmatn', sans-serif; background-color: var(--accent-color);
+            color: var(--text-color); border: none; border-radius: 10px;
+            cursor: pointer; transition: all 0.2s ease; box-shadow: 0 0 15px var(--accent-color);
+        }
+        .modal-btn:active { transform: scale(0.95); box-shadow: 0 0 5px var(--accent-color); }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <div class="game-header">
+            <div class="top-row">
+                 <div class="info-panel">
+                    <div class="score-box">رکورد: <span id="high-score">0</span></div>
+                    <div class="score-box">امتیاز: <span id="score">0</span></div>
+                </div>
+                <div class="next-piece-box"><p>بعدی</p><canvas id="next-piece-canvas"></canvas></div>
+            </div>
+        </div>
+        <div id="canvas-wrapper">
+            <canvas id="game-board"></canvas>
+            <div id="pause-overlay">توقف</div>
+        </div>
+        <div class="controls">
+            <button id="pause-btn">❚❚</button>
+            <button id="rotate-btn">↻</button>
+            <button id="move-left-btn">←</button>
+            <button id="down-btn">↓</button>
+            <button id="move-right-btn">→</button>
+        </div>
+    </div>
+
+    <div id="start-modal" class="modal"><div class="modal-content"><h2>به تتریس خوش آمدید!</h2><button id="start-btn" class="modal-btn">شروع بازی</button></div></div>
+    <div id="game-over-modal" class="modal"><div class="modal-content"><h2>بازی تمام شد!</h2><p>امتیاز نهایی: <span id="final-score">0</span></p><button id="restart-btn" class="modal-btn">شروع مجدد</button></div></div>
+
+    <script>
+        const canvas = document.getElementById('game-board');
+        const context = canvas.getContext('2d');
+        const canvasWrapper = document.getElementById('canvas-wrapper');
+        const nextCanvas = document.getElementById('next-piece-canvas');
+        const nextContext = nextCanvas.getContext('2d');
+        const pauseOverlay = document.getElementById('pause-overlay');
+        
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('high-score');
+        
+        const startModal = document.getElementById('start-modal');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const startButton = document.getElementById('start-btn');
+        const restartButton = document.getElementById('restart-btn');
+        const finalScoreElement = document.getElementById('final-score');
+
+        const ROWS = 20; const COLS = 10;
+        let BLOCK_SIZE;
+
+        const COLORS = [null, '#FF0D72', '#0DC2FF', '#0DFF72', '#F538FF', '#FF8E0D', '#FFE138', '#8A2BE2'];
+        const SHAPES = [[], [[0,1,0],[1,1,1],[0,0,0]], [[0,0,0,0],[2,2,2,2],[0,0,0,0],[0,0,0,0]], [[0,3,3],[3,3,0],[0,0,0]], [[4,4,0],[0,4,4],[0,0,0]], [[0,0,5],[5,5,5],[0,0,0]], [[6,0,0],[6,6,6],[0,0,0]], [[7,7],[7,7]]];
+
+        let board, player, nextPlayer, score, dropCounter, lastTime, animationFrameId;
+        let normalDropInterval = 1000;
+        let softDropInterval = 50;
+        let currentDropInterval = normalDropInterval;
+        let isPaused = false;
+
+        const moveState = { left: false, right: false };
+        let moveCounter = 0;
+        const MOVE_INTERVAL = 100;
+
+        function getHighScore() { return localStorage.getItem('tetrisHighScore') || 0; }
+        function saveHighScore() { const hs = getHighScore(); if (score > hs) { localStorage.setItem('tetrisHighScore', score); highScoreElement.innerText = score; } }
+        function loadHighScore() { highScoreElement.innerText = getHighScore(); }
+
+        function createBoard() { return Array.from({ length: ROWS }, () => Array(COLS).fill(0)); }
+        function getNewPiece() { const typeId = Math.floor(Math.random() * (SHAPES.length - 1)) + 1; return { matrix: SHAPES[typeId], typeId: typeId }; }
+
+        function resetPlayer() {
+            player = { pos: { x: Math.floor(COLS / 2) - 1, y: 0 }, ...nextPlayer };
+            nextPlayer = getNewPiece(); drawNextPiece();
+            if (collide()) { gameOver(); }
+        }
+
+        function draw() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = 'rgba(10, 10, 20, 0.5)'; context.fillRect(0, 0, canvas.width, canvas.height);
+            drawMatrix(context, board, { x: 0, y: 0 });
+            drawMatrix(context, player.matrix, player.pos);
+        }
+        
+        function drawNextPiece() {
+            nextContext.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
+            nextContext.fillStyle = 'rgba(10, 10, 20, 0.5)'; nextContext.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+            const matrix = nextPlayer.matrix; const offset = { x: (4 - matrix[0].length) / 2, y: (4 - matrix.length) / 2 };
+            drawMatrix(nextContext, matrix, offset);
+        }
+
+        function drawMatrix(ctx, matrix, offset) {
+            matrix.forEach((row, y) => {
+                row.forEach((value, x) => {
+                    if (value !== 0) {
+                        ctx.fillStyle = COLORS[value]; ctx.fillRect(x + offset.x, y + offset.y, 1, 1);
+                        ctx.strokeStyle = '#111'; ctx.lineWidth = 0.1;
+                        ctx.strokeRect(x + offset.x, y + offset.y, 1, 1);
+                    }
+                });
+            });
+        }
+
+        function merge() { player.matrix.forEach((row, y) => { row.forEach((value, x) => { if (value !== 0) { board[y + player.pos.y][x + player.pos.x] = value; } }); }); }
+        function collide() { const [m, o] = [player.matrix, player.pos]; for (let y = 0; y < m.length; ++y) { for (let x = 0; x < m[y].length; ++x) { if (m[y][x] !== 0 && (board[y + o.y] && board[y + o.y][x + o.x]) !== 0) { return true; } } } return false; }
+
+        function playerDrop() { player.pos.y++; if (collide()) { player.pos.y--; merge(); sweepLines(); resetPlayer(); } dropCounter = 0; }
+        function playerMove(dir) { player.pos.x += dir; if (collide()) { player.pos.x -= dir; } }
+
+        function rotate(matrix) { for (let y = 0; y < matrix.length; ++y) { for (let x = 0; x < y; ++x) { [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]]; } } matrix.forEach(row => row.reverse()); }
+        function playerRotate() { if(isPaused) return; const pos = player.pos.x; let offset = 1; rotate(player.matrix); while (collide()) { player.pos.x += offset; offset = -(offset + (offset > 0 ? 1 : -1)); if (offset > player.matrix[0].length) { rotate(player.matrix); player.pos.x = pos; return; } } }
+
+        function sweepLines() { let clearedLines = 0; outer: for (let y = board.length - 1; y > 0; --y) { for (let x = 0; x < board[y].length; ++x) { if (board[y][x] === 0) continue outer; } const row = board.splice(y, 1)[0].fill(0); board.unshift(row); ++y; clearedLines++; } if(clearedLines > 0) { score += clearedLines * 10 * clearedLines; scoreElement.innerText = score; } }
+
+        function update(time = 0) {
+            if (!isPaused) {
+                const deltaTime = time - lastTime; lastTime = time;
+                dropCounter += deltaTime;
+                if (dropCounter > currentDropInterval) { playerDrop(); }
+                
+                moveCounter += deltaTime;
+                if (moveCounter > MOVE_INTERVAL) {
+                    if (moveState.left) { playerMove(1); } // Inverted
+                    if (moveState.right) { playerMove(-1); } // Inverted
+                    moveCounter = 0;
+                }
+                draw();
+            }
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        function gameOver() { cancelAnimationFrame(animationFrameId); saveHighScore(); finalScoreElement.innerText = score; gameOverModal.classList.add('show'); }
+        
+        function setupCanvas() {
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+            BLOCK_SIZE = Math.floor(wrapperRect.width / COLS);
+            
+            canvas.width = COLS * BLOCK_SIZE; canvas.height = ROWS * BLOCK_SIZE;
+            context.resetTransform();
+            context.scale(BLOCK_SIZE, BLOCK_SIZE);
+            
+            const NEXT_CANVAS_SIZE = 4;
+            const nextPieceScale = 0.5;
+            nextCanvas.width = NEXT_CANVAS_SIZE * BLOCK_SIZE * nextPieceScale;
+            nextCanvas.height = NEXT_CANVAS_SIZE * BLOCK_SIZE * nextPieceScale;
+            nextContext.resetTransform();
+            nextContext.scale(BLOCK_SIZE * nextPieceScale, BLOCK_SIZE * nextPieceScale);
+        }
+
+        function togglePause() {
+            isPaused = !isPaused;
+            if(isPaused) {
+                pauseOverlay.classList.add('show');
+            } else {
+                pauseOverlay.classList.remove('show');
+                // To avoid a jump in time, reset lastTime
+                lastTime = performance.now();
+            }
+        }
+
+        function initGame() {
+            setupCanvas();
+            board = createBoard(); score = 0; scoreElement.innerText = score;
+            loadHighScore(); nextPlayer = getNewPiece(); resetPlayer();
+            lastTime = performance.now();
+            dropCounter = 0; currentDropInterval = normalDropInterval; isPaused = false;
+            pauseOverlay.classList.remove('show');
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            update();
+        }
+
+        const leftBtn = document.getElementById('move-left-btn');
+        const rightBtn = document.getElementById('move-right-btn');
+        const downBtn = document.getElementById('down-btn');
+
+        leftBtn.addEventListener('mousedown', () => { if(isPaused) return; moveState.left = true; playerMove(1); moveCounter = 0; });
+        leftBtn.addEventListener('touchstart', (e) => { if(isPaused) return; e.preventDefault(); moveState.left = true; playerMove(1); moveCounter = 0; });
+        
+        rightBtn.addEventListener('mousedown', () => { if(isPaused) return; moveState.right = true; playerMove(-1); moveCounter = 0; });
+        rightBtn.addEventListener('touchstart', (e) => { if(isPaused) return; e.preventDefault(); moveState.right = true; playerMove(-1); moveCounter = 0; });
+
+        downBtn.addEventListener('mousedown', () => { if(isPaused) return; currentDropInterval = softDropInterval; });
+        downBtn.addEventListener('touchstart', (e) => { if(isPaused) return; e.preventDefault(); currentDropInterval = softDropInterval; });
+        
+        document.addEventListener('mouseup', () => { moveState.left = false; moveState.right = false; currentDropInterval = normalDropInterval; });
+        document.addEventListener('touchend', () => { moveState.left = false; moveState.right = false; currentDropInterval = normalDropInterval; });
+        
+        document.getElementById('rotate-btn').addEventListener('click', playerRotate);
+        document.getElementById('pause-btn').addEventListener('click', togglePause);
+        startButton.addEventListener('click', () => { startModal.classList.remove('show'); initGame(); });
+        restartButton.addEventListener('click', () => { gameOverModal.classList.remove('show'); initGame(); });
+        window.onload = () => { startModal.classList.add('show'); };
+    </script>
+</body>
+</html>

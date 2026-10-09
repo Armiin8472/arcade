@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>حدس عدد</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  min-height:100vh;height:100vh;display:flex;justify-content:center;align-items:center;
+  font-family:Tahoma,Arial,sans-serif;
+  background:linear-gradient(135deg,#111827,#1e3a5f);
+  color:#fff;padding:12px;overflow:hidden;
+}
+.game{
+  width:min(460px,100%);background:#172033;border:1px solid #334155;
+  border-radius:24px;padding:22px;box-shadow:0 20px 60px #0008;
+  display:flex;flex-direction:column;max-height:95vh;
+}
+h1{text-align:center;margin:0 0 6px;font-size:28px}
+.subtitle{text-align:center;color:#aab6ca;margin-bottom:16px;font-size:14px}
+.stats{display:flex;justify-content:space-between;gap:10px;margin-bottom:14px}
+.stat{flex:1;background:#0f172a;border-radius:14px;padding:10px;text-align:center}
+.stat span{display:block;color:#ffd54a;font-size:22px;font-weight:bold;margin-top:4px}
+.guess-input{
+  width:100%;padding:14px;border-radius:14px;border:2px solid #475569;
+  background:#0b1220;color:#fff;font-size:34px;text-align:center;font-weight:bold;
+  letter-spacing:18px;text-indent:18px;outline:none;transition:.2s;margin-bottom:10px;
+  direction:ltr;
+}
+.guess-input::placeholder{color:#334155;letter-spacing:18px;text-indent:18px}
+.guess-input:focus{border-color:#60a5fa;box-shadow:0 0 15px rgba(96,165,250,.3)}
+.buttons{display:flex;gap:10px;margin-bottom:10px}
+button{
+  border:0;border-radius:13px;padding:13px 10px;font-size:15px;font-weight:bold;
+  cursor:pointer;transition:.15s;flex:1;background:#2563eb;color:white;font-family:inherit;
+}
+button:hover:not(:disabled){transform:translateY(-2px);filter:brightness(1.1)}
+button:disabled{opacity:.4;cursor:not-allowed}
+.hint{background:#d97706}
+.message{min-height:24px;text-align:center;margin-bottom:8px;font-weight:bold;font-size:14px}
+.history{
+  display:flex;flex-direction:column;gap:7px;
+  overflow-y:auto;overflow-x:hidden;
+  max-height:0;transition:max-height .4s ease;
+  padding:0 2px;
+}
+.history.scrollable{max-height:280px;scrollbar-width:thin;scrollbar-color:#475569 transparent}
+.guess-row{
+  background:#0f172a;border-radius:13px;padding:9px 12px;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  flex-shrink:0;
+}
+.digits{display:flex;direction:ltr;gap:4px}
+.digit{
+  font-size:22px;font-weight:bold;min-width:32px;height:32px;
+  display:flex;align-items:center;justify-content:center;
+}
+.green{color:#22c55e}.yellow{color:#facc15}.red{color:#ef4444}
+.legend{text-align:center;color:#94a3b8;font-size:11px;margin-top:10px;flex-shrink:0}
+.overlay{
+  position:fixed;inset:0;background:#0009;display:none;align-items:center;
+  justify-content:center;padding:20px;z-index:10;
+}
+.modal{
+  background:#172033;border:1px solid #475569;border-radius:20px;padding:25px;
+  width:min(380px,100%);text-align:center;
+}
+.modal h2{margin-top:0}
+.modal button{margin-top:8px}
+#toast{
+  position:fixed;bottom:25px;left:50%;transform:translateX(-50%);
+  background:#020617;color:#fff;padding:12px 20px;border-radius:12px;
+  display:none;box-shadow:0 8px 30px #0008;z-index:20;
+}
+</style>
+</head>
+<body>
+<div class="game">
+  <h1>🎯 حدس عدد</h1>
+  <div class="subtitle">عدد سه‌رقمی مخفی را در حداکثر ۱۰ حدس پیدا کن!</div>
+
+  <div class="stats">
+    <div class="stat">🪙 سکه‌ها<span id="coins">0</span></div>
+    <div class="stat">🎲 حدس باقی‌مانده<span id="remaining">10</span></div>
+  </div>
+
+  <input type="text" class="guess-input" id="guessInput" maxlength="3" inputmode="numeric" placeholder="---" autocomplete="off">
+
+  <div class="buttons">
+    <button id="guessBtn">حدس بزن</button>
+    <button id="hintBtn" class="hint">💡 راهنما (۸ 🪙)</button>
+  </div>
+
+  <div id="message" class="message"></div>
+  <div id="history" class="history"></div>
+  <div class="legend">🟢 درست و جای درست &nbsp; 🟡 رقم درست جای اشتباه &nbsp; 🔴 اشتباه</div>
+</div>
+
+<div id="hintModal" class="overlay">
+  <div class="modal">
+    <h2>💡 استفاده از راهنما؟</h2>
+    <p>۸ سکه کم می‌شود و یک رقم درست نمایش داده می‌شود.</p>
+    <button id="confirmHint">تأیید</button>
+    <button id="cancelHint" style="background:#475569">لغو</button>
+  </div>
+</div>
+
+<div id="resultModal" class="overlay">
+  <div class="modal">
+    <h2 id="resultTitle"></h2>
+    <p id="resultText"></p>
+    <button id="newGameBtn">🎲 بازی بعدی</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const COIN_KEY = "threeDigitGuessCoins";
+let coins = Number(localStorage.getItem(COIN_KEY) || 0);
+let secret = "";
+let attempts = 0;
+let gameOver = false;
+let hintedPositions = new Set();
+
+const coinsEl = document.getElementById("coins");
+const remainingEl = document.getElementById("remaining");
+const historyEl = document.getElementById("history");
+const message = document.getElementById("message");
+const hintBtn = document.getElementById("hintBtn");
+const guessInput = document.getElementById("guessInput");
+
+function saveCoins(){
+  localStorage.setItem(COIN_KEY, String(coins));
+  coinsEl.textContent = coins;
+  hintBtn.disabled = coins < 8 || gameOver;
+}
+
+function newSecret(){
+  const digits = [...Array(10).keys()];
+  digits.sort(()=>Math.random()-.5);
+  secret = String(digits[0])+String(digits[1])+String(digits[2]);
+}
+
+function newGame(){
+  newSecret();
+  attempts = 0;
+  gameOver = false;
+  hintedPositions.clear();
+  historyEl.innerHTML = "";
+  historyEl.classList.remove("scrollable");
+  message.textContent = "";
+  guessInput.value = "";
+  guessInput.disabled = false;
+  document.getElementById("guessBtn").disabled = false;
+  remainingEl.textContent = "10";
+  saveCoins();
+  guessInput.focus();
+}
+
+function showToast(text){
+  const t=document.getElementById("toast");
+  t.textContent=text;t.style.display="block";
+  clearTimeout(showToast._t);
+  showToast._t=setTimeout(()=>t.style.display="none",2200);
+}
+
+function evaluateGuess(guess){
+  return [...guess].map((d,i)=>{
+    if(d===secret[i]) return "green";
+    if(secret.includes(d)) return "yellow";
+    return "red";
+  });
+}
+
+function addHistory(guess, result){
+  const row=document.createElement("div");
+  row.className="guess-row";
+  row.style.direction="rtl";
+
+  const label=document.createElement("div");
+  label.style.cssText="font-size:13px;color:#94a3b8;direction:rtl;white-space:nowrap";
+  label.textContent="حدس "+attempts;
+
+  const digitsDiv=document.createElement("div");
+  digitsDiv.className="digits";
+
+  [...guess].forEach((d,i)=>{
+    const span=document.createElement("span");
+    span.className="digit "+result[i];
+    const emoji=result[i]==="green"?" 🟢":result[i]==="yellow"?" 🟡":" 🔴";
+    span.textContent=d+emoji;
+    digitsDiv.appendChild(span);
+  });
+
+  row.appendChild(label);
+  row.appendChild(digitsDiv);
+  historyEl.prepend(row);
+}
+
+function endGame(win){
+  gameOver=true;
+  guessInput.disabled=true;
+  document.getElementById("guessBtn").disabled=true;
+  hintBtn.disabled=true;
+
+  if(win){
+    coins+=10;saveCoins();
+    document.getElementById("resultTitle").textContent="🎉 برنده شدی!";
+    document.getElementById("resultText").textContent="عدد "+secret+" را پیدا کردی! +۱۰ سکه 🪙";
+  }else{
+    document.getElementById("resultTitle").textContent="😅 باختی!";
+    document.getElementById("resultText").textContent="عدد درست "+secret+" بود. بیشتر تلاش کن! 💪";
+  }
+  document.getElementById("resultModal").style.display="flex";
+}
+
+function makeGuess(){
+  if(gameOver) return;
+  const g=guessInput.value.replace(/[^0-9]/g,"");
+  if(!/^[0-9]{3}$/.test(g)){showToast("سه رقم وارد کن.");return;}
+  attempts++;
+  const result=evaluateGuess(g);
+  addHistory(g,result);
+  // از اولین حدس، تاریخچه نمایش داده شود
+  historyEl.classList.add("scrollable");
+  remainingEl.textContent=10-attempts;
+
+  if(g===secret){
+    message.textContent="🔥 دقیقاً درست بود!";
+    endGame(true);return;
+  }
+  message.textContent="";
+  guessInput.value="";
+  guessInput.focus();
+
+  if(attempts>=10) endGame(false);
+}
+
+// فقط عدد قبول کن
+guessInput.addEventListener("input",e=>{
+  e.target.value=e.target.value.replace(/[^0-9]/g,"").slice(0,3);
+});
+guessInput.addEventListener("keydown",e=>{
+  if(e.key==="Enter") makeGuess();
+});
+
+document.getElementById("guessBtn").addEventListener("click",makeGuess);
+
+hintBtn.addEventListener("click",()=>{
+  if(coins<8){showToast("🪙 سکه نداری!");return;}
+  document.getElementById("hintModal").style.display="flex";
+});
+document.getElementById("cancelHint").onclick=()=>{document.getElementById("hintModal").style.display="none"};
+document.getElementById("confirmHint").onclick=()=>{
+  document.getElementById("hintModal").style.display="none";
+  const available=[0,1,2].filter(i=>!hintedPositions.has(i));
+  if(!available.length){showToast("همه ارقام قبلاً راهنما شده.");return;}
+  const pos=available[Math.floor(Math.random()*available.length)];
+  hintedPositions.add(pos);
+  coins-=8;saveCoins();
+  message.innerHTML="💡 رقم <b>"+(pos+1)+"</b> عدد مخفی: <b>"+secret[pos]+"</b>";
+  showToast("۸ سکه کم شد!");
+};
+document.getElementById("newGameBtn").onclick=()=>{
+  document.getElementById("resultModal").style.display="none";newGame();
+};
+[document.getElementById("hintModal"),document.getElementById("resultModal")].forEach(m=>{
+  m.addEventListener("click",e=>{if(e.target===m)m.style.display="none"});
+});
+
+newGame();
+</script>
+</body>
+</html>
