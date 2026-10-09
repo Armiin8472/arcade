@@ -44,7 +44,7 @@
             grid-template-rows: repeat(21, 1fr); grid-template-columns: repeat(21, 1fr);
             background-color: var(--board-bg-color); border: 2px solid var(--primary-color);
             box-shadow: 0 0 25px var(--primary-color), inset 0 0 15px rgba(0, 255, 255, 0.2);
-            backdrop-filter: blur(5px); position: relative;
+             position: relative;
         }
 
         #game-board::before {
@@ -69,7 +69,7 @@
         .screen-box {
             background-color: var(--board-bg-color); padding: 30px; border-radius: 15px;
             border: 2px solid var(--primary-color); box-shadow: 0 0 25px var(--primary-color);
-            backdrop-filter: blur(10px);
+            
         }
 
         #game-over-overlay { display: none; }
@@ -212,10 +212,35 @@
             }
         }
 
+        const cellMap = {};
+        function ensureCell(key, x, y, cls) {
+            let e = cellMap[key];
+            if (!e) {
+                e = document.createElement('div');
+                e.style.gridRowStart = y;
+                e.style.gridColumnStart = x;
+                e.classList.add(cls);
+                gameBoard.appendChild(e);
+                cellMap[key] = e;
+            } else {
+                e.style.gridRowStart = y;
+                e.style.gridColumnStart = x;
+                if (!e.classList.contains(cls)) { e.classList.remove('snake', 'food'); e.classList.add(cls); }
+            }
+        }
         function draw() {
-            gameBoard.innerHTML = '';
-            drawSnake(gameBoard);
-            drawFood(gameBoard);
+            const needed = new Set();
+            for (const s of snakeBody) {
+                const k = s.x + ',' + s.y;
+                needed.add(k);
+                ensureCell(k, s.x, s.y, 'snake');
+            }
+            const fk = food.x + ',' + food.y;
+            needed.add(fk);
+            ensureCell(fk, food.x, food.y, 'food');
+            for (const k of Object.keys(cellMap)) {
+                if (!needed.has(k)) { cellMap[k].remove(); delete cellMap[k]; }
+            }
         }
 
         function togglePause() {

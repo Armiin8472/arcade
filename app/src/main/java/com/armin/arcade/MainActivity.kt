@@ -27,11 +27,16 @@ class MainActivity : AppCompatActivity() {
     )
 
     private val builtins = listOf(
-        Item("مار سایبری", "", "مار نئونی با ۳ سرعت", "game", "snake.html", R.drawable.ic_snake, false),
-        Item("تتریس نهایی", "", "بلوک‌ها رو مرتب کن", "game", "tetris.html", R.drawable.ic_tetris, false),
-        Item("حدس عدد", "", "عدد سه‌رقمی رو پیدا کن", "game", "guess.html", R.drawable.ic_guess, false),
-        Item("رمزگذار XOR", "", "رمزنگاری و رمزگشایی متن", "prog", "cipher.html", R.drawable.ic_lock, false)
+        Item("مار بازی", "🐍", "مار نئونی با ۳ سرعت", "game", "snake.html", 0, false),
+        Item("تتریس", "🧱", "بلوک‌ها رو مرتب کن", "game", "tetris.html", 0, false),
+        Item("حدس عدد", "🔢", "عدد سه‌رقمی رو پیدا کن", "game", "guess.html", 0, false),
+        Item("رمزگذار XOR", "🔐", "رمزنگاری و رمزگشایی متن", "prog", "cipher.html", 0, false)
     )
+
+    // built-in هایی که کاربر حذف کرده
+    private fun hidden(): MutableSet<String> =
+        getSharedPreferences("arcade", MODE_PRIVATE)
+            .getStringSet("hidden", mutableSetOf())!!.toMutableSet()
 
     private var customs = mutableListOf<Item>()
     private lateinit var llList: LinearLayout
@@ -57,8 +62,9 @@ class MainActivity : AppCompatActivity() {
     private fun render() {
         llList.removeAllViews()
 
-        val games = builtins.filter { it.cat == "game" } + customs.filter { it.cat == "game" }
-        val progs = builtins.filter { it.cat == "prog" } + customs.filter { it.cat == "prog" }
+        val hid = hidden()
+        val games = (builtins.filter { it.cat == "game" && it.file !in hid }) + customs.filter { it.cat == "game" }
+        val progs = (builtins.filter { it.cat == "prog" && it.file !in hid }) + customs.filter { it.cat == "prog" }
 
         if (games.isNotEmpty()) {
             addHeader("🎮 بازی‌ها")
@@ -102,21 +108,25 @@ class MainActivity : AppCompatActivity() {
                 putExtra("title", item.name)
             })
         }
-        if (item.custom) {
-            card.setOnLongClickListener {
-                AlertDialog.Builder(this)
-                    .setTitle(item.name)
-                    .setMessage("حذف این مورد؟")
-                    .setPositiveButton("حذف") { _, _ ->
+        card.setOnLongClickListener {
+            AlertDialog.Builder(this)
+                .setTitle(item.name)
+                .setMessage(if (item.custom) "حذف این مورد؟" else "بازی پیش‌فرض حذف شود؟")
+                .setPositiveButton("حذف") { _, _ ->
+                    if (item.custom) {
                         File(item.file).delete()
                         customs.removeAll { it.file == item.file }
                         saveCustoms()
-                        render()
+                    } else {
+                        val h = hidden(); h.add(item.file)
+                        getSharedPreferences("arcade", MODE_PRIVATE)
+                            .edit().putStringSet("hidden", h).apply()
                     }
-                    .setNegativeButton("انصراف", null)
-                    .show()
-                true
-            }
+                    render()
+                }
+                .setNegativeButton("انصراف", null)
+                .show()
+            true
         }
         llList.addView(card, matchWrap())
     }
